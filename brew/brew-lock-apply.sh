@@ -52,6 +52,21 @@ for pkg in $CASKS_LOCK; do
         echo "[Установка] $pkg"
         brew install --cask "$pkg"
     fi
+
+    # Получение пути к приложению через brew info --cask
+    APP_NAME=$(brew info --cask "$pkg" | grep -E '\.app|\.prefPane' | head -n 1 | awk -F'(' '{print $1}' | xargs | awk -F'/' '{print $NF}')
+    if [ -n "$APP_NAME" ]; then
+        # Поиск приложения в /Applications, учитывая возможные различия в регистре и именах
+        # Например, для "chromium" может быть "Chromium.app"
+        APP_PATH=$(find /Applications -maxdepth 2 -iname "$APP_NAME" -print -quit)
+    fi
+    
+    if [ -n "$APP_PATH" ] && [ -d "$APP_PATH" ]; then
+        echo "[Применение xattr -cr] $APP_PATH"
+        xattr -cr "$APP_PATH"
+    else
+        echo "[Предупреждение] Не удалось найти путь к приложению для '$pkg' через brew info --cask или приложение не существует. Пропуск xattr -cr."
+    fi
 done
 
 # Очистка мусора
